@@ -37,7 +37,7 @@
         .stop-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; animation: slideIn 0.2s ease-out; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 20px; }
         .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
@@ -157,16 +157,22 @@
                             <div><span class="label-text">Load time (Hrs)</span><input type="number" id="loadHrs" value="1" step="0.5" class="frost-input text-center font-bold" oninput="update()"></div>
                             <div><span class="label-text">Tip time (Hrs)</span><input type="number" id="tipHrs" value="1" step="0.5" class="frost-input text-center font-bold" oninput="update()"></div>
                         </div>
-                        <div class="mb-4 flex items-center justify-between p-3 bg-slate-50 border rounded">
-                            <div>
-                                <span class="label-text mb-0">Tail Lift Required</span>
-                                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">+ £25.00 Flat Fee</p>
+                        
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center justify-between p-3 bg-slate-50 border rounded">
+                                <div><span class="label-text mb-0">Tail Lift Required</span><p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">+ £25.00 Flat Fee</p></div>
+                                <label class="switch"><input type="checkbox" id="tailLift" onchange="update()"><span class="slider"></span></label>
                             </div>
-                            <label class="switch">
-                                <input type="checkbox" id="tailLift" onchange="update()">
-                                <span class="slider"></span>
-                            </label>
+                            <div class="flex items-center justify-between p-3 bg-slate-50 border rounded">
+                                <div><span class="label-text mb-0">Pre-10am Delivery</span><p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">+ £25.00 Flat Fee</p></div>
+                                <label class="switch"><input type="checkbox" id="pre10" onchange="update()"><span class="slider"></span></label>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-slate-50 border rounded">
+                                <div><span class="label-text mb-0">Parking & Tolls</span><p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">+ £50.00 Flat Fee</p></div>
+                                <label class="switch"><input type="checkbox" id="parking" onchange="update()"><span class="slider"></span></label>
+                            </div>
                         </div>
+
                         <div class="mb-4"><span class="label-text">Job Ref</span><input type="text" id="jobRef" class="frost-input font-bold uppercase"></div>
                         <div><span class="label-text">Notes</span><textarea id="jobNotes" class="frost-input h-20 pt-2 text-xs uppercase" placeholder="Instructions..."></textarea></div>
                     </section>
@@ -200,23 +206,8 @@
         </main>
     </div>
 
-    <!-- Profile Screen -->
-    <div id="screen-profile" class="app-screen max-w-[800px] mx-auto py-16 px-6">
-        <div class="frost-card p-10 border-t-8 border-red-600">
-            <h2 class="text-2xl font-black italic uppercase mb-8">Account Profile</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div><span class="label-text">Full Name</span><input type="text" id="profFullName" class="frost-input"></div>
-                <div><span class="label-text">Email</span><input type="text" id="profEmail" class="frost-input bg-slate-50" disabled></div>
-                <div><span class="label-text">Company Name</span><input type="text" id="profCompanyName" class="frost-input"></div>
-                <div><span class="label-text">Phone Number</span><input type="tel" id="profPhone" class="frost-input"></div>
-            </div>
-            <button onclick="updateProfile()" id="profUpdateBtn" class="w-full btn-primary py-4 rounded mt-10">Save Updates</button>
-            <button onclick="showScreen('calculator')" class="w-full mt-4 text-xs font-bold uppercase text-slate-400">Return to Portal</button>
-        </div>
-    </div>
-
     <footer class="status-bar">
-        <div>ENGINE: <span class="text-white">FIXED-FUEL-V13.3</span></div>
+        <div>ENGINE: <span class="text-white">PORTAL-V14.0</span></div>
         <div class="ml-auto">FUEL PRICE: <span id="fuelPriceStatus" class="text-green-500 font-bold">£1.40/L</span></div>
     </footer>
 
@@ -226,7 +217,7 @@
         const sb = supabase.createClient(_URL, _KEY);
 
         const minPrices = { '44T Articulated': 280, '26T Rigid': 240, '7.5T Rigid': 200, 'Luton Express': 160 };
-        const activeFuelPrice = 1.40; // Hardcoded fixed fuel rate
+        const activeFuelPrice = 1.40;
 
         window.onload = async () => { 
             startClock(); 
@@ -276,24 +267,10 @@
             const m = user.user_metadata;
             document.getElementById('userBadge').innerText = (m?.full_name || 'CONNECTED').toUpperCase();
             document.getElementById('fleetUserName').innerText = (m?.full_name || 'User').toUpperCase();
-            document.getElementById('profFullName').value = m?.full_name || '';
-            document.getElementById('profEmail').value = user.email;
-            document.getElementById('profCompanyName').value = m?.company_name || '';
-            document.getElementById('profPhone').value = m?.phone || '';
             document.getElementById('custEmail').value = user.email;
             document.getElementById('custPhone').value = m?.phone || '';
             document.getElementById('custName').value = m?.full_name || '';
             document.getElementById('userId').value = user.id;
-        }
-
-        async function updateProfile() {
-            const btn = document.getElementById('profUpdateBtn');
-            btn.disabled = true; btn.innerText = "SAVING...";
-            const { data, error } = await sb.auth.updateUser({
-                data: { full_name: document.getElementById('profFullName').value, company_name: document.getElementById('profCompanyName').value, phone: document.getElementById('profPhone').value }
-            });
-            if (error) { alert(error.message); btn.disabled = false; btn.innerText = "Save Updates"; }
-            else { btn.innerText = "UPDATED!"; setupUser(data.user); setTimeout(() => { btn.disabled = false; btn.innerText = "Save Updates"; }, 2000); }
         }
 
         function selectVehicle(name, rate, mpg) {
@@ -317,7 +294,7 @@
                 directionsRenderer.setMap(map);
                 new google.maps.places.Autocomplete(document.getElementById('pickup')).addListener('place_changed', calculate);
                 new google.maps.places.Autocomplete(document.getElementById('delivery')).addListener('place_changed', calculate);
-            } catch (e) { console.error("Maps hook failed"); }
+            } catch (e) {}
         }
 
         function addStop() {
@@ -363,28 +340,38 @@
             const load = parseFloat(document.getElementById('loadHrs').value) || 0;
             const tip = parseFloat(document.getElementById('tipHrs').value) || 0;
             const transit = parseFloat(document.getElementById('timeInput').value) || 0;
+            
+            // Gather all Surcharges
             const isTailLift = document.getElementById('tailLift').checked;
+            const isPre10 = document.getElementById('pre10').checked;
+            const isParking = document.getElementById('parking').checked;
+            
+            // Count valid extra drops for £50 charge
+            const stops = Array.from(document.querySelectorAll('.stop-input')).map(i => i.value).filter(v => v);
+            const dropCount = stops.length;
 
             const totalHours = transit + load + tip;
-            const fuel = (miles / mpg) * 4.546 * activeFuelPrice; // Uses the fixed 1.40 rate
+            const fuel = (miles / mpg) * 4.546 * activeFuelPrice; 
             const labor = totalHours * rate;
             
-            // 20% Profit Margin Markup across core assets only
+            // 20% Margin applied ONLY to fuel and labor
             let subtotalMarkedUp = Math.ceil(((fuel + labor) * 1.20) / 10) * 10;
             
             const minAllowed = minPrices[vName] || 0;
             if (subtotalMarkedUp < minAllowed) subtotalMarkedUp = minAllowed;
             
-            // Add Tail Lift Flat rate directly post production check to protect fixed fee metrics
-            const total = subtotalMarkedUp + (isTailLift ? 25 : 0);
+            const surchargeTotal = (isTailLift ? 25 : 0) + (isPre10 ? 25 : 0) + (isParking ? 50 : 0) + (dropCount * 50);
+            const total = subtotalMarkedUp + surchargeTotal;
             
             document.getElementById('totalDisp').innerText = '£' + total.toFixed(2);
             
-            // Financials hidden from client, showing logistics details and surcharges only
             document.getElementById('breakdown').innerHTML = `
                 <div class='flex justify-between'><span>Total Route Distance</span><span>${miles} mi</span></div>
                 <div class='flex justify-between'><span>Est. Time Window</span><span>${totalHours.toFixed(2)} hrs</span></div>
                 ${isTailLift ? "<div class='flex justify-between text-yellow-500'><span>Tail Lift Surcharge</span><span>£25.00</span></div>" : ""}
+                ${isPre10 ? "<div class='flex justify-between text-yellow-500'><span>Pre-10am Surcharge</span><span>£25.00</span></div>" : ""}
+                ${isParking ? "<div class='flex justify-between text-yellow-500'><span>Parking & Tolls</span><span>£50.00</span></div>" : ""}
+                ${dropCount > 0 ? `<div class='flex justify-between text-yellow-500'><span>Extra Drops (${dropCount})</span><span>£${(dropCount * 50).toFixed(2)}</span></div>` : ""}
                 ${subtotalMarkedUp === minAllowed ? "<div class='text-[10px] text-red-500 font-black mt-2 italic uppercase tracking-wider'>Minimum Asset Threshold Met</div>" : ""}
             `;
         }
@@ -396,6 +383,14 @@
             const end = document.getElementById('delivery').value;
             const stops = Array.from(document.querySelectorAll('.stop-input')).map(i => i.value).filter(v => v);
             const fullRoute = [start, ...stops, end].join(' -> ');
+
+            // Compile extra toggles into the notes field so the DB doesn't crash on missing columns
+            const extraNotes = [];
+            if (document.getElementById('tailLift').checked) extraNotes.push("Tail Lift");
+            if (document.getElementById('pre10').checked) extraNotes.push("Pre-10am");
+            if (document.getElementById('parking').checked) extraNotes.push("Parking/Tolls");
+            const userNotes = document.getElementById('jobNotes').value;
+            const combinedNotes = extraNotes.length > 0 ? `[Extras: ${extraNotes.join(", ")}] ${userNotes}` : userNotes;
 
             btn.disabled = true; submitText.innerText = "SENDING...";
             
@@ -412,7 +407,7 @@
                 total_price: parseFloat(document.getElementById('totalDisp').innerText.replace('£','')),
                 vehicle_type: document.getElementById('activeVehicleName').value,
                 reference: document.getElementById('jobRef').value,
-                notes: document.getElementById('jobNotes').value,
+                notes: combinedNotes,
                 tail_lift: document.getElementById('tailLift').checked,
                 status: 'pending'
             }]);
@@ -426,6 +421,8 @@
             document.getElementById('delivery').value = '';
             document.getElementById('stops').innerHTML = '';
             document.getElementById('tailLift').checked = false;
+            document.getElementById('pre10').checked = false;
+            document.getElementById('parking').checked = false;
             document.getElementById('colDate').value = '';
             document.getElementById('delDate').value = '';
             document.getElementById('mileInput').value = '0';
@@ -442,7 +439,6 @@
 
         function validateDates() { document.getElementById('delDate').min = document.getElementById('colDate').value; }
     </script>
-
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDOPkYduNBvti4HWX2izIhCrrQ02uk5SL0&libraries=places&callback=initMap"></script>
 </body>
 </html>
